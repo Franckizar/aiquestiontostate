@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seduction Coach</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background: linear-gradient(to right, #1e3a8a, #3b82f6);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+            display: flex;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        .card {
+            flex: 1;
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .result-box {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f9fafb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .result-box pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        button {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto">
+        <!-- Left Side: Prompt and Evaluate -->
+        <div class="card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Social Scenario Practice</h2>
+            <div class="mb-4">
+                <button id="generatePromptBtn" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                    Generate Random Scenario
+                </button>
+                <div id="promptResult" class="result-box mt-2 hidden"></div>
+            </div>
+            <div class="mb-4">
+                <textarea id="promptInput" class="w-full p-2 border rounded-lg" rows="3" placeholder="Enter or use generated scenario..."></textarea>
+                <textarea id="answerInput" class="w-full p-2 border rounded-lg mt-2" rows="3" placeholder="Enter your answer..."></textarea>
+                <button id="evaluateBtn" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg mt-2 hover:bg-green-700">
+                    Evaluate Answer
+                </button>
+                <div id="evaluateResult" class="result-box mt-2 hidden"></div>
+            </div>
+        </div>
+
+        <!-- Right Side: Question to Statement -->
+        <div class="card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Question to Statement</h2>
+            <div class="mb-4">
+                <button id="generateQuestionBtn" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700">
+                    Generate Random Question
+                </button>
+                <div id="questionResult" class="result-box mt-2 hidden"></div>
+            </div>
+            <div class="mb-4">
+                <textarea id="questionInput" class="w-full p-2 border rounded-lg" rows="3" placeholder="Enter or use generated question..."></textarea>
+                <button id="convertBtn" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg mt-2 hover:bg-indigo-700">
+                    Convert to Statement
+                </button>
+                <div id="convertResult" class="result-box mt-2 hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8090/api';
+
+        // Helper to display results
+        function displayResult(elementId, data) {
+            const element = document.getElementById(elementId);
+            element.classList.remove('hidden');
+            element.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+
+        // Helper to handle errors
+        function handleError(elementId, error) {
+            const element = document.getElementById(elementId);
+            element.classList.remove('hidden');
+            element.innerHTML = `<pre class="text-red-600">Error: ${error.message}</pre>`;
+        }
+
+        // Generate Random Scenario Prompt
+        document.getElementById('generatePromptBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/prompts/random`);
+                const data = await response.json();
+                displayResult('promptResult', data);
+                document.getElementById('promptInput').value = data.question;
+            } catch (error) {
+                handleError('promptResult', error);
+            }
+        });
+
+        // Evaluate Answer
+        document.getElementById('evaluateBtn').addEventListener('click', async () => {
+            const question = document.getElementById('promptInput').value;
+            const answer = document.getElementById('answerInput').value;
+            try {
+                const response = await fetch(`${API_BASE_URL}/ai/evaluate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question, answer })
+                });
+                const data = await response.json();
+                displayResult('evaluateResult', data);
+            } catch (error) {
+                handleError('evaluateResult', error);
+            }
+        });
+
+        // Generate Random Day-to-Day Question
+        document.getElementById('generateQuestionBtn').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/questions/random`);
+                const data = await response.json();
+                displayResult('questionResult', data);
+                document.getElementById('questionInput').value = data.question;
+            } catch (error) {
+                handleError('questionResult', error);
+            }
+        });
+
+        // Convert Question to Statement
+        document.getElementById('convertBtn').addEventListener('click', async () => {
+            const question = document.getElementById('questionInput').value;
+            try {
+                const response = await fetch(`${API_BASE_URL}/question-to-statement`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question })
+                });
+                const data = await response.json();
+                displayResult('convertResult', data);
+            } catch (error) {
+                handleError('convertResult', error);
+            }
+        });
+    </script>
+</body>
+</html>
